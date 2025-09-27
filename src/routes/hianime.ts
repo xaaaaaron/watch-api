@@ -188,26 +188,38 @@ hianimeRouter.get("/episode/servers", async (c) => {
 // episodeId=steinsgate-3?ep=230
 // /api/v2/hianime/episode/sources?animeEpisodeId={episodeId}?server={server}&category={category (dub or sub)}
 hianimeRouter.get("/episode/sources", async (c) => {
-    const cacheConfig = c.get("CACHE_CONFIG");
-    const animeEpisodeId = decodeURIComponent(
-        c.req.query("animeEpisodeId") || ""
-    );
-    const server = decodeURIComponent(
-        c.req.query("server") || HiAnime.Servers.VidStreaming
-    ) as HiAnime.AnimeServers;
-    const category = decodeURIComponent(c.req.query("category") || "sub") as
-        | "sub"
-        | "dub"
-        | "raw";
+  const cacheConfig = c.get("CACHE_CONFIG");
+  const animeEpisodeId = decodeURIComponent(
+    c.req.query("animeEpisodeId") || ""
+  );
+  const server = decodeURIComponent(
+    c.req.query("server") || HiAnime.Servers.VidStreaming
+  ) as HiAnime.AnimeServers;
+  const category = decodeURIComponent(c.req.query("category") || "sub") as
+    | "sub"
+    | "dub"
+    | "raw";
 
-    const data = await cache.getOrSet<HiAnime.ScrapedAnimeEpisodesSources>(
-        async () => hianime.getEpisodeSources(animeEpisodeId, server, category),
-        cacheConfig.key,
-        cacheConfig.duration
-    );
+  const data = await cache.getOrSet<HiAnime.ScrapedAnimeEpisodesSources>(
+    async () => hianime.getEpisodeSources(animeEpisodeId, server, category),
+    cacheConfig.key,
+    cacheConfig.duration
+  );
 
-    return c.json({ status: 200, data }, { status: 200 });
+  // 👇 rewrite every URL to go through your proxy
+  const backendOrigin = new URL(c.req.url).origin;
+
+  const proxied = {
+    ...data,
+    sources: data.sources.map((src) => ({
+      ...src,
+      url: `${backendOrigin}/api/v2/proxy?url=${encodeURIComponent(src.url)}`,
+    })),
+  };
+
+  return c.json({ status: 200, data: proxied }, { status: 200 });
 });
+
 
 // /api/v2/hianime/anime/{anime-id}/episodes
 hianimeRouter.get("/anime/:animeId/episodes", async (c) => {
