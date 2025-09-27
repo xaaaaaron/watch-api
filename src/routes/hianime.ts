@@ -189,9 +189,7 @@ hianimeRouter.get("/episode/servers", async (c) => {
 // /api/v2/hianime/episode/sources?animeEpisodeId={episodeId}?server={server}&category={category (dub or sub)}
 hianimeRouter.get("/episode/sources", async (c) => {
   const cacheConfig = c.get("CACHE_CONFIG");
-  const animeEpisodeId = decodeURIComponent(
-    c.req.query("animeEpisodeId") || ""
-  );
+  const animeEpisodeId = decodeURIComponent(c.req.query("animeEpisodeId") || "");
   const server = decodeURIComponent(
     c.req.query("server") || HiAnime.Servers.VidStreaming
   ) as HiAnime.AnimeServers;
@@ -206,8 +204,7 @@ hianimeRouter.get("/episode/sources", async (c) => {
     cacheConfig.duration
   );
 
-  // 👇 rewrite every URL to go through your proxy
-  const backendOrigin = new URL(c.req.url).origin;
+  const backendOrigin = process.env.BACKEND_ORIGIN || `https://${c.req.header("host")}`;
 
   const proxied = {
     ...data,
@@ -219,6 +216,7 @@ hianimeRouter.get("/episode/sources", async (c) => {
 
   return c.json({ status: 200, data: proxied }, { status: 200 });
 });
+
 
 
 // /api/v2/hianime/anime/{anime-id}/episodes
