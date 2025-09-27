@@ -43,7 +43,7 @@ export function cacheConfigSetter(keySliceIndex: number): MiddlewareHandler {
 
 export function withCache<T, P extends string = string>(
     getData: (c: Context<ServerContext, P, BlankInput>) => Promise<T>
-) {
+): MiddlewareHandler  {
     return async (c: Context<ServerContext, P, BlankInput>) => {
         const cacheConfig = c.get("CACHE_CONFIG");
 
